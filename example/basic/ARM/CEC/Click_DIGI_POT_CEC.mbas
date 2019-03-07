@@ -1,0 +1,93 @@
+'
+'Example for DIGI_POT Click
+'
+'    Date          : Oct 2018.
+'    Author        : Nenad Filipovic
+'
+'Test configuration CEC :
+'    
+'    MCU              : CEC1702
+'    Dev. Board       : Clicker 2 for CEC1702
+'    ARM Compiler ver : v6.0.0.0
+'
+'---
+'
+'Description :
+'
+'The application is composed of three sections :
+'
+'- System Initialization - Initializes GPIO, SPI and LOG structures, set CS pin as output.
+'- Application Initialization - Initialization driver enable's - SPI and start write log.
+'- Application Task - (code snippet) This is a example which demonstrates the use of DIGI POT Click board.
+'     Increments the wiper position by 10 position every 3 seconds.
+'     Calculate ADC voltage and write log UART.
+'     All data logs on usb uart for aproximetly every 3 sec.
+'
+'Additional Functions :
+'
+'- UART
+'- Conversions
+'
+'
+program Click_DIGI_POT_CEC
+
+include Click_DIGI_POT_types
+include Click_DIGI_POT_config
+
+dim
+    counter as uint16_t 
+    adcValue as uint8_t 
+    adcVoltage as float 
+    logText as char[50] 
+    
+sub procedure systemInit() 
+
+    mikrobus_gpioInit(_MIKROBUS1, _MIKROBUS_CS_PIN, _GPIO_OUTPUT) 
+    mikrobus_spiInit(_MIKROBUS1, @_DIGIPOT_SPI_CFG[0]) 
+    mikrobus_logInit(_MIKROBUS2, 9600) 
+    Delay_100ms() 
+
+end sub
+
+sub procedure applicationInit() 
+
+    digipot_spiDriverInit(T_DIGIPOT_P(@_MIKROBUS1_GPIO), T_DIGIPOT_P(@_MIKROBUS1_SPI)) 
+    mikrobus_logWrite("      DIGI POT Click", _LOG_LINE) 
+    mikrobus_logWrite("--------------------------", _LOG_LINE) 
+    Delay_100ms() 
+
+end sub
+
+sub procedure applicationTask() 
+
+    counter = 100
+    while (counter < 256) 
+        digipot_setWiperPositions(counter) 
+        Delay_1sec() 
+        adcValue = digipot_readByte(_DIGIPOT_STATUS_REGISTER) 
+        Delay_1sec() 
+        adcVoltage = digipot_convertOutput(adcValue, _DIGIPOT2_VREF_3V3) 
+        mikrobus_logWrite(" ADC Voltage:  ", _LOG_TEXT) 
+        FloatToStr(adcVoltage, logText) 
+        ltrim(logText) 
+        mikrobus_logWrite(logText, _LOG_TEXT) 
+        mikrobus_logWrite(" V", _LOG_LINE) 
+        mikrobus_logWrite("", _LOG_LINE) 
+        Delay_1sec() 
+        Delay_1sec() 
+        Delay_1sec() 
+    counter = (counter + 10)
+    wend
+    mikrobus_logWrite("--------------------------", _LOG_LINE) 
+
+end sub
+
+main :
+
+    systemInit() 
+    applicationInit() 
+    while (1) 
+        applicationTask() 
+    wend
+
+end.
